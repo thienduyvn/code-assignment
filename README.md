@@ -1,4 +1,4 @@
-# vothienduy_assignment
+# Vo Thien Duy - FE Test
 
 A modern React 19 application built with TypeScript and Tailwind CSS.
 
