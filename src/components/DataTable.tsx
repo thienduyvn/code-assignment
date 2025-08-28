@@ -11,7 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EditableCell } from "@/components/EditableCell";
-import { StatusBadge } from "@/components/StatusBadge";
 import { useDataStore, type PersonRecord } from "@/store/dataStore";
 import {
   Plus,
@@ -115,7 +114,7 @@ export function DataTable({ className }: DataTableProps) {
     );
   };
 
-  // Simple validation functions
+  // Comprehensive validation functions
   const validateName = (value: string): string | null => {
     if (!value.trim()) {
       return "Name is required";
@@ -123,16 +122,82 @@ export function DataTable({ className }: DataTableProps) {
     if (value.length < 2) {
       return "Name must be at least 2 characters";
     }
+    if (value.length > 50) {
+      return "Name must be less than 50 characters";
+    }
+    // Check for valid characters (letters, spaces, hyphens, apostrophes)
+    if (!/^[a-zA-Z\s\-']+$/.test(value.trim())) {
+      return "Name can only contain letters, spaces, hyphens, and apostrophes";
+    }
+    return null;
+  };
+
+  const validateBio = (value: string): string | null => {
+    if (!value.trim()) {
+      return "Bio is required";
+    }
+    if (value.length < 10) {
+      return "Bio must be at least 10 characters";
+    }
+    if (value.length > 500) {
+      return "Bio must be less than 500 characters";
+    }
+    return null;
+  };
+
+  const validateLanguage = (value: string): string | null => {
+    const validLanguages = [
+      "Sindhi",
+      "Hindi",
+      "Bosnian",
+      "Icelandic",
+      "Maltese",
+      "Galician",
+      "Uyghur",
+      "isiZulu",
+      "Setswana",
+      "Sesotho sa Leboa",
+    ];
+
+    if (!value.trim()) {
+      return "Language is required";
+    }
+    if (!validLanguages.includes(value)) {
+      return "Please select a valid language from the dropdown";
+    }
     return null;
   };
 
   const validateVersion = (value: string): string | null => {
+    if (!value.trim()) {
+      return "Version is required";
+    }
+
     const num = parseFloat(value);
     if (isNaN(num)) {
-      return "Version must be a number";
+      return "Version must be a valid number";
     }
     if (num < 0) {
       return "Version must be positive";
+    }
+    if (num > 999) {
+      return "Version must be less than 1000";
+    }
+    // Check for reasonable decimal places
+    if (value.includes(".") && value.split(".")[1].length > 2) {
+      return "Version can have at most 2 decimal places";
+    }
+    return null;
+  };
+
+  const validateState = (value: string): string | null => {
+    const validStates = ["new customer", "served", "to contact", "paused"];
+
+    if (!value.trim()) {
+      return "State is required";
+    }
+    if (!validStates.includes(value)) {
+      return "Please select a valid state from the dropdown";
     }
     return null;
   };
@@ -413,6 +478,7 @@ export function DataTable({ className }: DataTableProps) {
                         onSave={(value) =>
                           handleCellUpdate(record.id, "bio", value)
                         }
+                        validation={validateBio}
                       />
                     </TableCell>
                     <TableCell className="py-3">
@@ -432,6 +498,7 @@ export function DataTable({ className }: DataTableProps) {
                         onSave={(value) =>
                           handleCellUpdate(record.id, "language", value)
                         }
+                        validation={validateLanguage}
                       />
                     </TableCell>
                     <TableCell className="py-3">
@@ -445,7 +512,14 @@ export function DataTable({ className }: DataTableProps) {
                       />
                     </TableCell>
                     <TableCell className="py-3">
-                      <StatusBadge status={record.state} />
+                      <EditableCell
+                        value={record.state}
+                        field="state"
+                        onSave={(value) =>
+                          handleCellUpdate(record.id, "state", value)
+                        }
+                        validation={validateState}
+                      />
                     </TableCell>
                     <TableCell className="font-mono text-xs text-gray-600 py-3">
                       {record.createdDate}

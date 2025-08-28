@@ -54,13 +54,25 @@ export function EditableCell({
     }
   }, [isEditing]);
 
-  const handleSave = () => {
-    if (validation) {
+  // Real-time validation as user types
+  useEffect(() => {
+    if (isEditing && validation) {
       const validationError = validation(editValue);
-      if (validationError) {
-        setError(validationError);
-        return;
-      }
+      setError(validationError);
+    }
+  }, [editValue, isEditing, validation]);
+
+  const handleSave = () => {
+    // Always run validation before saving
+    let validationError = null;
+    if (validation) {
+      validationError = validation(editValue);
+      setError(validationError);
+    }
+
+    // Don't save if there are validation errors
+    if (validationError) {
+      return;
     }
 
     const finalValue = field === "version" ? parseFloat(editValue) : editValue;
@@ -73,6 +85,13 @@ export function EditableCell({
     setEditValue(String(value));
     setIsEditing(false);
     setError(null);
+  };
+
+  const handleBlur = () => {
+    // Only save on blur if there are no validation errors
+    if (!error) {
+      handleSave();
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -101,14 +120,21 @@ export function EditableCell({
           </Select>
           <div className="flex gap-1 mt-1">
             <button
-              className="text-xs bg-green-500 text-white px-2 py-1 rounded"
+              className={`text-xs px-2 py-1 rounded transition-colors ${
+                error
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-green-500 text-white hover:bg-green-600"
+              }`}
               onClick={handleSave}
+              disabled={!!error}
+              title={error ? `Cannot save: ${error}` : "Save changes"}
             >
               ✓
             </button>
             <button
-              className="text-xs bg-gray-500 text-white px-2 py-1 rounded"
+              className="text-xs bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600 transition-colors"
               onClick={handleCancel}
+              title="Cancel changes"
             >
               ✕
             </button>
@@ -135,14 +161,21 @@ export function EditableCell({
           </Select>
           <div className="flex gap-1 mt-1">
             <button
-              className="text-xs bg-green-500 text-white px-2 py-1 rounded"
+              className={`text-xs px-2 py-1 rounded transition-colors ${
+                error
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-green-500 text-white hover:bg-green-600"
+              }`}
               onClick={handleSave}
+              disabled={!!error}
+              title={error ? `Cannot save: ${error}` : "Save changes"}
             >
               ✓
             </button>
             <button
-              className="text-xs bg-gray-500 text-white px-2 py-1 rounded"
+              className="text-xs bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600 transition-colors"
               onClick={handleCancel}
+              title="Cancel changes"
             >
               ✕
             </button>
@@ -159,8 +192,12 @@ export function EditableCell({
           value={editValue}
           onChange={(e) => setEditValue(e.target.value)}
           onKeyDown={handleKeyDown}
-          onBlur={handleSave}
-          className="h-8 text-sm border-blue-300 focus:border-blue-500"
+          onBlur={handleBlur}
+          className={`h-8 text-sm transition-colors ${
+            error
+              ? "border-red-300 focus:border-red-500 bg-red-50"
+              : "border-blue-300 focus:border-blue-500"
+          }`}
           type={field === "version" ? "number" : "text"}
           step={field === "version" ? "0.01" : undefined}
         />
@@ -169,13 +206,38 @@ export function EditableCell({
     );
   }
 
+  // Helper function to get status badge styling
+  const getStatusBadgeStyle = (status: string) => {
+    const statusConfig = {
+      "new customer": "bg-red-50 text-red-700 border-red-200",
+      served: "bg-blue-50 text-blue-700 border-blue-200",
+      "to contact": "bg-green-50 text-green-700 border-green-200",
+      paused: "bg-yellow-50 text-yellow-700 border-yellow-200",
+    } as const;
+
+    return (
+      statusConfig[status as keyof typeof statusConfig] ||
+      "bg-gray-50 text-gray-700 border-gray-200"
+    );
+  };
+
   return (
     <div
       className="cursor-pointer hover:bg-blue-50 p-2 rounded min-h-[32px] flex items-center text-sm transition-colors"
       onClick={() => setIsEditing(true)}
       title="Click to edit"
     >
-      <span className="truncate">{value}</span>
+      {field === "state" ? (
+        <span
+          className={`px-2 py-1 rounded-md border text-xs font-medium ${getStatusBadgeStyle(
+            String(value)
+          )}`}
+        >
+          {value}
+        </span>
+      ) : (
+        <span className="truncate">{value}</span>
+      )}
     </div>
   );
 }
